@@ -26,6 +26,8 @@ We have a file called `oldfile.txt`. We want to rename it to `newfile.txt` and s
 	git mv(take a look)
 	git mv oldfile.txt newfile.txt
 
+<!--more-->
+
 ### restructure(重建)
 You added some files to your repository, but now realize that your project needs to be restructured.  Make a new folder named `src` and using Git move all of the .html files into this folder.
 

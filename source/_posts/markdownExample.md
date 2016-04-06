@@ -26,6 +26,8 @@ Like, seriously, a _LOT_ of text**
 
 > Right angle brackets &gt; are used for block quotes.
 
+<!--more-->
+
 #### Links and Email
 
 An email <example@example.com> link.

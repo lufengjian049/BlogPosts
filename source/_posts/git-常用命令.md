@@ -1,7 +1,8 @@
 ---
 title: git 常用命令
 date: 2016-04-05 11:23:07
-tags:
+tags: git
+categories: Git
 ---
 ### rm
 A file has been removed from the working tree, however the file was not removed from the repository.  Find out what this file was and remove it.    

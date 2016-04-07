@@ -1,7 +1,8 @@
 ---
 title: markdownExample
 date: 2016-04-05 17:22:45
-tags:
+tags: markdown
+categories: Markdown
 ---
 # Mou
 

@@ -75,4 +75,6 @@ The `README` file has been committed, but it looks like the file `forgotten_file
 ```
 git config --global alias.lg "log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
 git config --global alias.last 'log -1'
+ssh-keygen -t rsa -C "email-address"
+git checkout -b [分知名] [远程名]/[分知名]   // 与远程分支建立联系
 ```

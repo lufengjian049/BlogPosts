@@ -69,3 +69,10 @@ The `README` file has been committed, but it looks like the file `forgotten_file
 	git add forgotten_file.rb
 	git commit --amend
 ```
+
+### 常用的命令
+
+```
+git config --global alias.lg "log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
+git config --global alias.last 'log -1'
+```

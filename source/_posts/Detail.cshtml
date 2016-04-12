@@ -1,0 +1,811 @@
+﻿﻿@using System.Configuration
+<script type="text/lizard-config">
+    {
+        "url_schema": "dest/t{id}.html",
+        "model": {
+            "apis": [{
+                url: '@ConfigurationManager.AppSettings["restfullApi"]ViewSpotInfoV1QOC',
+                postdata: {
+                    "id":Lizard.P('id')||762,
+                    "isbi": true,
+                    "imgsize": 'C_200_200',
+                    "imglimit": 1,
+                    "iskill": true,
+                    "ver": '@ConfigurationManager.AppSettings["apiVersion"]'
+                }
+            }],
+            "filter":function(datas){
+                datas = _httpFilter_(datas);
+                var data=datas[0].data,
+                    head = datas[0].head;
+                if(data && head.errcode == '0') {
+                    var prd = data.product, includedIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+                        rfcats = prd.rfcats, alnat ='B', abCases =['A', 'B', 'C'] ;
+                    var ressHash = {},
+                        thtj;//玩乐要上移时特惠推荐要置顶
+
+                    if(prd) {
+                        var ress = prd.ress;
+                        for(var i = 0; i < ress.length; i++) {
+                            ress[i].idx = i;
+                            if(!ressHash.hasOwnProperty(ress[i].id)) {
+                                ressHash[ress[i].id] = ress[i];
+                            }
+                        }
+                        data.ressHash = ressHash;
+
+                        var boxs = prd.boxs || [],
+                            boxids = [];
+                        for(var i = 0; i < boxs.length; i++) {
+                            if(boxs[i].iscross) {
+                                boxs[i].idx = ress.length + i;
+                                boxs[i].isbox = true;
+                                boxids.push(boxs[i].boxid);
+                            }
+                            if(!ressHash.hasOwnProperty(boxs[i].boxid)) {
+                                ressHash[boxs[i].boxid] = boxs[i]
+                            }
+                        }
+                        var hasLP = false; //是否有联票
+
+
+                        for(var i = 0; i < rfcats.length; i++) {
+
+                            if(rfcats[i].rfcatid === 12) {//有联票，将景＋景并入联票中
+                                rfcats[i].resids = boxids.concat(rfcats[i].resids);
+                                hasLP = true;
+                            }
+                        }
+
+                        if(!hasLP && boxids.length > 0) {//没有联票且有景＋景打包资源
+                            rfcats.push({
+                                rfcatid: 12,
+                                rfcatname: '联票',
+                                resids: boxids
+                            });
+                        }
+
+                        data.product.rfcats = rfcats;
+                        data.alnat = alnat;
+                        data.hasRess = prd && (prd.ress.length > 0 || boxids > 0);
+                    } else {
+                        data.hasRess = false;
+                    }
+
+                } else {
+                    data = {nodata:true};
+                }
+                var ua =(typeof navigator !=='undefined' && navigator.userAgent.toLowerCase())||'',
+                isYongthApp = ua.indexOf('_youth_ctripwireless') >= 0;
+                data.isYongthApp=isYongthApp;
+                return data;
+            },
+            "setTDK": function(datas) {
+                var data = datas[0].data || { name : '景点'}
+                var TDK = {
+                    title: '【携程旅行】-' + data.name + '门票,' + data.name + '门票价格,' + data.name + '门票团购',
+                    keywords: data.name + '门票,' + data.name + '门票价格,' + data.name + '门票团购,' + data.name + '门票多少钱,携程旅行,携程门票app',
+                    description: '携程旅行为您提供手机预订' + data.name + '门票服务，找' + data.name + '门票多少钱、' + data.name + '最低价格、' + data.name + '门票团购、返现最多的信息，携程门票官方APP更好用。更多' + data.name + '门票信息，请访问m.ctrip.com。'
+                }
+                return TDK;
+            },
+            "init_data": {}
+        },
+        "view":{
+            "header": Lizard.T("headTmpl"),
+            "viewport": Lizard.T("viewportTmpl")
+        },
+        "controller": Lizard.WebresourcePDBaseUrl+"views/detail.js"
+    }
+</script>
+
+<script id="headTmpl" type="text/lizard-template">
+    <h1><%=name%></h1>
+</script>
+
+<script id="viewportTmpl" type="text/lizard-template">
+    <div id="ticket-detail-con" class="js_scroll-box">
+        <%if(typeof nodata=='undefined'){
+        var isphone,isbook,isinfor,bookClass,payClass,isStudentTicket,isInStudentApp,prdTitleClass,
+            baseUrl = Lizard.isHybrid ? './package' : '';
+        %>
+            <%if(pfrom=='0'||pfrom=='1'){%>
+                <div class="mb10">
+                    <%if(product.ress.length === 0 && !isactpro) {
+                    %>
+                        <div class="ticket_detail_info_1 border-list mb10">
+                            <p>暂无<%=name%>相关产品</p>
+                        </div>
+                    <%}%>
+                    <div class="scenic_info border-item-b">
+                        <%if(imgurls.length > 0) {
+                        var imgcount = imgcount || imgurls.length;
+                        %>
+                        <div class="scenic_img" id="c-ticket-img-list">
+                            <span class="f-logo"></span>
+                            <img data-src="<%=imgurls[0]%>">
+                            <div class="scenic_num"><%=imgcount %>张</div>
+                        </div>
+                        <%} else {%>
+                        <div class="scenic_img no_img">
+                             <span class="f-logo"></span>
+                        </div>
+                        <%}%>
+                        <%if(cmtscore > 0) {%>
+                            <ul class="ticket_comment_details">
+                                <li class="arr_r border-item-b " id="ticket-detail-attr">
+                                    <div class="ticket_intr_box">
+                                        <div class="weather_tips fr" id="c-ticket-detail-weather"></div>
+                                        景点介绍
+                                    </div>
+                                </li>
+                                <%if(isactpro) {%>
+                                    <li>
+                                        <div class="ticket_user_comment ticket_user_comment2">
+                                            <span class="score"><%=cmtscore%>分</span>
+                                            <span class="cui-rate cui-rate2">
+                                                <em class="cui-rate-r1"><i></i><i></i><i></i><i></i><i></i></em>
+                                                <em class="cui-rate-r2" style="width: <%=(cmtscore/0.5)*10%>%; top: 0; "><i></i><i></i><i></i><i></i><i></i></em>
+                                            </span>
+                                        </div>
+                                    </li>
+                                <%} else {%>
+                                    <li id="li_user_comment" class="arr_r" data-cmtscore='<%=cmtscore%>'>
+                                        <div class="ticket_user_comment_box">
+                                            <div class="ticket_user_comment">
+                                                <span class="score"><%=cmtscore%>分</span>
+                                                <span class="num"><%=cmtusertotal%>条点评</span>
+                                            </div>
+                                            <span class="cui-rate cui-rate2">
+                                                <em class="cui-rate-r1"><i></i><i></i><i></i><i></i><i></i></em>
+                                                <em class="cui-rate-r2" style="width: <%=(cmtscore/0.5)*10%>%; top: 0; "><i></i><i></i><i></i><i></i><i></i></em>
+                                            </span>
+                                        </div>
+                                    </li>
+                                <%}%>
+                            </ul>
+                        <%} else {%>
+                            <ul class="ticket_comment_details">
+                                <li class="border-item arr_r" id="ticket-detail-attr">
+                                    <div class="ticket_intr_box">
+                                        景点介绍
+                                    </div>
+                                </li>
+                                <li>
+                                    <div class="no_comment">该景点暂无点评</div>
+                                </li>
+                            </ul>
+                        <%}%>
+                    </div>
+
+                    <%if(typeof addr !== 'undefined' && addr.length) {%>
+                    <ul class="ticket_address ticket_bottom_line">
+                        <li class="arr_r" id='<%=lon && lat ? "ticket-detail-map":""%>'>
+                            <%if(lon && lat) {%>
+                            <span class="f-position"></span>
+                            <%}%>
+                            <span class="ticket_address_text"><%=addr%></span>
+                        </li>
+                    </ul>
+                    <%}%>
+                </div>
+
+                <div class="ticket_list ticket_detail_list">
+                    <%
+                        function reSortRessId(ressIds, ressHash) {
+                            var isBooking = !!Lizard.P('isnowuse'), paymode = Lizard.P('paymode');//mock
+
+                            var adCanBookRess = [],//预付可订资源
+                                adNoBookRess = [], //预付不可订资源
+                                canBookRess = [], //现付可订资源
+                                noBookRess = [], //现付不可订资源
+                                killRess = []; //秒杀资源
+
+                            if(isBooking || paymode) {//列表页选了今日可订或者景点付款
+                                for(var i = 0; i < ressIds.length; i++) {
+                                    var ress = ressHash[ressIds[i]], nowTime, canNowUse = false;
+                                    if(!ress) {
+                                        continue;
+                                    }
+
+                                    nowTime = new Date();
+                                    nowTime = nowTime.getHours() + ':' + nowTime.getMinutes();
+                                    canNowUse = nowTime < ress.abtime && ress.abdays == 0;
+
+                                    if(ress.iskill) {
+                                        killRess.push(ressIds[i]);
+                                    }
+
+                                    if(ress.paymode =='O' && canNowUse == true) {//现付  今日可订
+                                        canBookRess.push(ressIds[i]);
+                                    }
+
+                                    if(ress.paymode =='O' && canNowUse == false) {//
+                                        noBookRess.push(ressIds[i])
+                                    }
+
+                                    if(ress.paymode =='P' && canNowUse == true) {
+                                        adCanBookRess.push(ressIds[i]);
+                                    }
+
+                                    if(ress.paymode =='P' && canNowUse == false) {
+                                        adNoBookRess.push(ressIds[i]);
+                                    }
+                                }
+
+                                if (isBooking == true && paymode == 'P') {//在线支付 & 今日可用
+                                    ressIds = [].concat(killRess, adCanBookRess, canBookRess, adNoBookRess, noBookRess)
+                                } else if (isBooking !== true && paymode == 'O') {//景点付款
+                                    ressIds = [].concat(killRess, canBookRess, noBookRess, adCanBookRess, adNoBookRess);
+                                } else if (isBooking === true && paymode !== 'P' && paymode !== 'O') {//在线支付
+                                    ressIds = [].concat(killRess, adCanBookRess, canBookRess, adNoBookRess, noBookRess);
+                                } else if(isBooking == true && paymode === 'O') {//景点付款 & 今日可用
+                                    ressIds = [].concat(killRess, canBookRess, adCanBookRess, noBookRess, adNoBookRess);
+                                }
+                            }
+
+                            return ressIds;
+                        }
+                    %>
+
+
+                    <div id="ticket-detail-activity-up-con" class="ttd-pro-wrap ttd-animation-time ttd-pro-main">
+                    </div>
+                    <%if(['B'].indexOf(alnat) >= 0 && hasRess) {%>
+                        <div class="tickets-title mt">
+                            <span class="icon-rectangle_blue"></span>
+                            门票
+                        </div>
+                    <%}%>
+                    <%
+                    //门票
+                    var rfcats = product.rfcats;
+                    for(var rfcatsIdx = 0; rfcatsIdx < rfcats.length; rfcatsIdx++) {
+                        var pageType = 'detail';
+                        var includedIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+                            className = includedIds.indexOf(rfcats[rfcatsIdx].rfcatid) >= 0 ? ('f-ticket-type' + rfcats[rfcatsIdx].rfcatid) : 'f-satellite',
+                            ressIds = rfcats[rfcatsIdx].resids;
+                    %>
+                        <dl>
+                            <dt class="ticket_bottom_line ticket_res_title">
+                                <span class="<%=className%>"></span><span><%=rfcats[rfcatsIdx].rfcatname%></span>
+                            </dt>
+                            <%
+                                ressIds = reSortRessId(ressIds, ressHash);
+                                for(var h = 0; h < ressIds.length; h++) {
+                                    var k = ressHash[ressIds[h]];
+                                    k.groupName = rfcats[rfcatsIdx].rfcatname
+                                    if (!k) {//没有找到资源
+                                        continue;
+                                    }
+                            %>
+                                @RenderPage("templates/ResSelect.cshtml")
+                            <%}%>
+                            <%if(ressIds.length > 8 && ['B'].indexOf(alnat) >= 0) {%>
+                                <div data-rfcatid="<%=rfcats[rfcatsIdx].rfcatid%>" class="view-more border-item-b view-more-ress">查看更多<%=ressIds.length - 8%>个产品<span class="f-arrow-light-down"></span></div>
+                            <%}%>
+                        </dl>
+                    <%}%>
+
+                    <%
+                        var noticeStatus = false, codes = ["10", "16", "31"], painfos,count=0, pClass = '';
+                        painfos =  product.painfos;
+                         for(var i = 0; i < painfos.length; i++) {
+                            if(painfos[i].astcode && codes.indexOf(painfos[i].astcode) > -1) {
+                                noticeStatus = true;
+                                count++;
+                            }
+                         }
+                        if(count > 1){
+                            pClass = 'multi_ellipsis3';
+                        }
+                    %>
+                    <%if(noticeStatus === true){%>
+                        <div class="booking_policy_box border-list mb10 booking_notice_click_area">
+                            <div class="booking_policy_list">
+                                <div class="border-item">
+                                    <div class="booking_policy_tit"><span class="f-announce"></span>门票预订说明</div>
+                                    <div class="product_summary with_height <%- count > 1 ? 'arr_r' : '' %>" data-count="<%= count %>">
+
+                                    <%
+                                        var index = 0;
+                                        painfos.forEach(function(item, i) {
+                                            if((item.astcode  && (codes.indexOf(item.astcode) === -1)) || (item.painfods && (item.painfods.length < 1) ) ) {
+                                                return;
+                                            }
+                                            if(item.painfods.length === 0) {
+                                                return;
+                                            }
+                                            index++;
+                                    %>
+                                        <%if(index === 1) {%>
+                                            <h3 class="sub_title"><span class="f-info"></span><%=item.astname %></h3>
+                                            <p class="info_detail <%=pClass%>">
+                                            <%item.painfods.forEach(function(v,i){%>
+                                                <%=v.ddetail %><br/>
+                                            <%})%>
+                                            </p>
+                                        <%} else {%>
+                                            <h3 class="sub_title basefix">
+                                                <div class="sub_title_item"><span class="f-info"></span><%=item.astname %></div>
+                                            </h3>
+                                        <%}%>
+                                    <%})%>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <%}%>
+                    <!--当地玩乐*-->
+                    <div id="ticket-detail-activity-con" class="ttd-pro-main">
+                    </div>
+                    <div id="ticket-detail-shx-con"></div>
+                    <div id="ticket-detail-suggest-con"></div>
+                </div>
+            <%}else{%>
+                <!--免费景点*-->
+                <div class="mb10">
+                    <div class="scenic_info border-item-b">
+                        <%if(imgurls.length > 0) {
+                        var imgcount = imgcount || imgurls.length;
+                        %>
+                        <div class="scenic_img" id="c-ticket-img-list">
+                            <span class="f-logo"></span>
+                            <img data-src="<%=imgurls[0]%>">
+                            <div class="scenic_num"><%=imgcount %>张</div>
+                        </div>
+                        <%} else {%>
+                            <div class="scenic_img no_img">
+                                <span class="f-logo"></span>
+                            </div>
+                        <%}%>
+                        <%if(cmtscore > 0) {%>
+                            <ul class="ticket_comment_details">
+                                <li id="li_user_comment" class="border-item arr_r" data-cmtscore='<%=cmtscore%>'>
+                                        <div class="ticket_user_comment">
+                                            <span class="score"><%=cmtscore%>分</span>
+                                            <span class="num"><%=cmtusertotal%>条点评</span>
+                                        </div>
+                                        <span class="cui-rate cui-rate2">
+                                            <em class="cui-rate-r1"><i></i><i></i><i></i><i></i><i></i></em>
+                                            <em class="cui-rate-r2" style="width: <%=(cmtscore/0.5)*10%>%; top: 0; "><i></i><i></i><i></i><i></i><i></i></em>
+                                        </span>
+                                </li>
+                                <%if(typeof addr !== 'undefined' && addr.length) {%>
+                                    <li class="ticket_address--p border-item arr_r" id='<%=lon && lat ? "ticket-detail-map":""%>'>
+                                        <div class="ticket_address_text ">
+                                            <span class="f-position"></span>
+                                            <%=addr%>
+                                        </div>
+                                    </li>
+                                <%}%>
+                            </ul>
+                        <%} else {%>
+                            <ul class="ticket_comment_details">
+                                <li class="border-item arr_r">
+                                    <div class="no_comment">该景点暂无点评</div>
+                                </li>
+                                <%if(typeof addr !== 'undefined' && addr.length) {%>
+                                    <li class="order-item arr_r" id='<%=lon && lat ? "ticket-detail-map":""%>'>
+                                        <div class="ticket_address_text">
+                                            <span class="f-position"></span>
+                                            <%=addr%>
+                                        </div>
+                                    </li>
+                                <%}%>
+                            </ul>
+                        <%}%>
+                    </div>
+                </div>
+                <div class="free-attractions-info" id="ticket_product_addinfodetails">
+
+                </div>
+            <%}%>
+        <%} else {%>
+
+        <%}%>
+    </div>
+</script>
+
+<!--产品附加信息*-->
+<script type="text/lizard-template" id="c-ticket-productaddinfo-temp">
+    <%_.each(proaddinfos, function(item) {%>
+        <div class='info-item border-item'>
+            <h3><span class="icon-rectangle_blue"></span><%=item.astname%></h3>
+            <%_.each(item.painfods, function(v) {%>
+                <p><%=v.ddetail%></p>
+            <%})%>
+        </div>
+    <%})%>
+    <%if(productdes){%>
+        <div class='info-item border-item'>
+            <h3><span class="icon-rectangle_blue"></span>景点介绍</h3>
+                <p><%=productdes%></p>
+        </div>
+    <%}%>
+</script>
+
+
+<!--天气*-->
+<script type="text/lizard-template" id="c-ticket-detail-weather-layer">
+    <ul class="ticket_weather_list ticket_list_indent5 bgwh">
+        <%
+        weathers.forEach(function(item){
+        %>
+        <li class="overflow">
+            <div class="fl">
+                <span class="f15"><%=item.day%></span>
+                <span class="ticket_date c9 db f13"><%=item.date%></span>
+            </div>
+            <div class="fr tr">
+                <span class="ticket_temperature"><%=item.dtpe%>℃~<%=item.ntpe%>℃</span><span class="ticket_weather c9 db f12"><%=item.dwname%></span>
+            </div>
+            <i class="icon_w <%=item.logo%> db"></i>
+        </li>
+        <%})%>
+    </ul>
+</script>
+
+<!--套餐 门票+酒店（不适合景酒搭配销售）*-->
+<script type="text/lizard-template" id="c-ticket-shx-temp">
+    <ul class="list_st_border ticket_listlmr mt10 mb10" id="ticket_shx_list" data-sdpid='<%=sdpid%>' data-url="<%=url%>">
+        <li>
+            <label class="ticket_label_title">
+                <span class="icon-rectangle_blue"></span>
+                门票＋酒店
+            </label>
+            <span class="ticket_hotel_fr">
+                <span class="ticket_tag_price">
+                    <dfn>¥</dfn>
+                    <i><%=price%></i>
+                    <span></span>
+                </span>
+                <span class="u-start">起</span>
+            </span>
+        </li>
+    </ul>
+</script>
+
+<!--套餐 门票+酒店（适合景酒搭配销售 模板）*-->
+<script type="text/lizard-template" id="c-ticket-shx-temp2">
+    <ul class="list_st_border ticket_listlmr mt10 mb10" id="ticket_shx_list" data-sdpid='<%=sdpid%>' data-url="<%=url%>">
+        <li>
+            <label class="ticket_label_title">
+                <span class="icon-rectangle_blue"></span>
+                门票＋酒店
+            </label>
+        </li>
+        <li class="ticket_bottom_line ticket_res_content">
+            <div class="ticket_item_info">
+                <div class="detail-resinfo-trigger ticket-item-desc" id="ticket-detail-resinfo--4823546">
+                    <div class="ticket_title">
+                        上海金茂大厦88层观光厅门票（儿童票）
+                    </div>
+                    <span style="height:20px;line-height:20px;border:1px solid #ccc;display:inline-block;">
+                        <span style="display:inline-block;padding:0 4px;background:#ccc;">最多省</span>
+                        <span style="display:inline-block;padding:0 4px;">￥50</span>
+                    </span>
+                </div>
+            </div>
+            <div class="ticket_book_click ticket-item-book " id="res_1000_4823546_btn">
+                  <div class="ticket_item_price">
+                      <span class="ticket_tag_price">
+                          <dfn>¥</dfn><i>50</i><span class="u-start"></span>
+                      </span>
+                  </div>
+                  <a class="ticket_book_btn">
+                      <span class="book_text book_text2">查看详情</span>
+                  </a>
+            </div>
+        </li>
+    </ul>
+</script>
+
+
+<!--产品介绍*-->
+<script type="text/lizard-template" id="c-ticket-attrs-temp">
+    <%var map,stars,time;%>
+    <%map = lon&&lat ? "地图" : "";%>
+    <%stars = star ? star+"A景区":"";%>
+    <%time = (typeof otdesc === 'undefined' || otdesc === null|| (typeof otdesc=='string'&&$.trim(otdesc)==='')) ? '' : '营业时间 ' + otdesc;%>
+    <article>
+        <%if(isdomestic && addr.length){%>
+        <ul class="list_st_border mb10  ticket_haveright" >
+            <li class="<%=map.length ? ' arr_r':'' %> line_none" id="ticket-detail-map">
+                <span class="ticket_ft16 dib" style='<%=addr.length ? "" : "display:none"%>'><%=addr%></span>
+                <span class="ticket_map abs f15 tc lh25 ticket_blue" style='<%=map.length ? "" : "display:none"%>'><%=map%></span>
+            </li>
+        </ul>
+        <%}%>
+
+        <%if( stars.length || time.length || attrsDesc ){ %>
+
+        <ul class="list_st_border mb10">
+            <li class="ticket_ping dianping">
+                <h4>
+                    <%if(stars.length) {%>
+                    <p class="ticket_ping_title"><%=stars%></p>
+                    <%} %>
+                    <%if(time.length) {%>
+                    <p><%=time%></p>
+                    <%} %>
+                </h4>
+                <%if(attrsDesc) {%>
+                <div class="line_18px lh18  mb10"><%=attrsDesc%></div>
+                <%} %>
+            </li>
+        </ul>
+        <%}%>
+    </article>
+</script>
+
+<!--新当地玩乐模版*-->
+<script id="c-ticket-activity-new-tmp" type="text/lizard-template">
+    <div class="">
+        <%
+        for(var i = 0; i < actGrp.length; i++) {
+            var act = actGrp[i];
+        %>
+        <div class="ttd-pro-box border-list mb10">
+            <div class="g-pro-title"><span class="icon-rectangle_blue"></span>
+                <%=act.catyname%>
+                <%
+                if(act.catyid === 38) {
+                    var tip = '';
+                    if(act.deps.length === 1) {
+                        tip = act.deps[0] + '出发';;
+                    }else if(act.deps.length === 2) {
+                        tip = act.deps.join('、') + '出发';
+                    } else if(act.deps.length > 2){
+                        tip = act.deps.slice(0, 2).join('、') + '等多城市出发';
+                    }
+                %>
+                    <span class="tips"><%=tip%></span>
+                <%}%>
+            </div>
+            <ul class="g-pro-list ttd-pro-list">
+
+                    <li>
+                    <%
+                       var lastDep, item;
+                       for(var k = 0; k < act.items.length; k++) {
+                            item = act.items[k];
+                            if(k > 2) {
+                                break;
+                            }
+
+                    %>
+                        <%
+                            if(act.catyid === 38 && lastDep != item.depname && act.deps.length > 1) {//每个分组显示出发地
+                                lastDep = item.depname;
+                        %>
+                            <div class="departure-city"><span class="f-position"></span><%=item.depname%>出发</div>
+                        <%}%>
+                        <div class="border-item-b g-pro-list_pl5 ttd-pro-list-item view-act-detail" data-url='<%=item.link%>' data-catyid="<%=act.catyid%>" data-idx='<%=i%>'>
+                            <div class="fr view-detail-item">
+                                <span class="ticket_tag_price"><dfn>¥</dfn><i><%=item.price%></i><em class="u-start">起</em></span>
+                                <a class="view-detail ">查看详情</a>
+                            </div>
+                            <div class="g-pro-list-info g-pro-list-info-1">
+                                <h3 class="g-title ellips_line2">
+                                    <%=item.name%>
+                                </h3>
+                                <div class="g-pro-info-item">
+                                    <%
+                                    for(var j = 0; j < item.vtags.length; j++) {
+                                        if(item.vtags[j].tid === 1 || item.vtags[j].tid === 2) {
+                                    %>
+                                         <span class="u-pro-tag">
+                                             <i class="blue"><%=item.vtags[j].tname%></i>
+                                         </span>
+                                    <%
+                                            break;
+                                        }
+                                    }
+                                    %>
+
+                                    <%if(item.svol>0){%>
+                                        <span class="text_light_gray">月销:<%=item.svol%>份</span>
+                                    <%}%>
+                                    <%if(item.sc>0){%>
+                                        <span class="g-score"><%=item.sc%>分</span>
+                                    <%}%>
+                                </div>
+                            </div>
+                        </div>
+                     <%}%>
+                    </li>
+            </ul>
+            <%if(act.items.length > 3) {%>
+                <div data-actid="<%=act.catyid%>" class="view-all-act-items view-more">查看全部<%=act.items.length%>个产品<span class="f-arrow-light-right"></span></div>
+            <%}%>
+        </div>
+        <%}%>
+    </div>
+</script>
+
+<!--当地玩乐模版*-->
+<script id="c-ticket-activity-tmp" type="text/lizard-template">
+
+    <%if(hasRess === false) {%>
+        <%
+            var actCount = 1;
+            for(var i = 0; i < actGrp.length; i++) {
+                var act = actGrp[i];
+
+        %>
+        <div class="ttd-pro-box atest border-list mb10">
+            <div class="g-pro-title">
+                <span class="icon-rectangle_blue"></span>
+                <%=act.catyname%>
+            </div>
+            <ul class="g-pro-list ttd-pro-list ttd-pro-list_img">
+            <%act.items.forEach(function(item,i){
+                var url=item.link+ (item.link.indexOf('?')>0 ? '&' : '?') +'from='+from;
+                url += '&ctm_ref=tkt_dl_ttd_tdpl_' + actCount++;
+            %>
+                <li>
+                    <a href="<%=url%>" lizard-catch="off">
+                        <div class="border-item g-pro-list_pl5 ttd-pro-list-item">
+                            <div class="g-pro-list-info g-pro-list-info-1">
+                                <%if(item.saletag) {%>
+                                <span class="icon-hot"><span class="icon-text"><%=item.saletag%></span></span>
+                                <%}%>
+                                <div class="g-pro-list-img">
+                                    <span class="f-logo"></span>
+                                    <img src="<%=item.imgurl%>" class="fade-in">
+                                    <%if(item.catyid === 38) {%>
+                                        <div class="departure-city-layer"><%=item.depname%>出发</div>
+                                    <%}%>
+                                </div>
+                                <h3 class="g-title ellips_line2"><%=item.name%></h3>
+                                <div class="text_light_gray ellipsis">
+                                    <%=item.pmrand%>
+                                </div>
+                                <div class="g-pro-info-item">
+                                    <div class="fr">
+                                        <span class="u-pro-price"><dfn>¥</dfn><i><%=item.price%></i></span>
+                                        <span class="u-start">起</span>
+                                    </div>
+                                    <%if(item.svol>0){%>
+                                        <span class="text_light_gray">月销:<%=item.svol%>份</span>
+                                    <%}%>
+                                    <%if(item.sc>0){%>
+                                        <span class="g-score"><%=item.sc%>分</span>
+                                    <%}%>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </li>
+                <%})%>
+            </ul>
+        </div>
+        <%}%>
+    <%} else {%>
+        <%
+            var actCount = 1;
+            for(var i = 0; i < actGrp.length; i++) {
+                var act = actGrp[i];
+
+        %>
+            <div class="ttd-pro-box atest border-list mb10">
+                <div class="g-pro-title border-item-b"><span class="icon-rectangle_blue"></span><%=act.catyname%></div>
+                <ul class="g-pro-list ttd-pro-list">
+                    <%act.items.forEach(function(item,i){
+                        var url=item.link+ (item.link.indexOf('?')>0 ? '&' : '?') +'from='+from;
+                        url += '&ctm_ref=tkt_dl_ttd_tdpl_' + actCount++;
+                    %>
+                    <li>
+                        <a href="<%=url%>" lizard-catch="off">
+                            <div class="border-item g-pro-list_pl5 ttd-pro-list-item">
+                                <div class="g-pro-list-info g-pro-list-info-1">
+                                    <h3 class="g-title ellips_line2"><%=item.name%></h3>
+                                    <div class="g-pro-info-item">
+                                        <div class="fr">
+                                            <%if(item.catyid == 38) {%>
+                                                <span class="departure-city"><%=item.depname%>出发</span>
+                                            <%}%>
+                                            <span class="u-pro-price">
+                                                <dfn>¥</dfn>
+                                                <i><%=item.price%></i>
+                                                <span></span>
+                                            </span>
+                                            <span class="u-start">起</span>
+                                        </div>
+                                        <%if(item.svol) {%>
+                                            <span class="text_light_gray">月销:<%=item.svol%>份</span>
+                                        <%}%>
+                                        <%if(item.sc>0){%>
+                                        <span class="g-score"><%=item.sc%>分</span>
+                                        <%}%>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </li>
+                    <%})%>
+                </ul>
+            </div>
+        <%}%>
+
+    <%}%>
+
+</script>
+
+<!--详细弹层-->
+<script type="text/lizard-template" id="c-ticket-dialog-template">
+    @RenderPage("templates/resDetailPopup.cshtml")
+</script>
+
+<!--详情弹层footer-->
+<script type="text/lizard-template" id="c-ticker-dialog-foot-template">
+    <div class="online_pay">
+      <span class="ticket_tag_price"><dfn>¥</dfn><i><%= price %></i></span>
+      <%if((Lizard.isHybrid && appSale === true) || (!Lizard.isHybrid && h5Sale === true)){ %>
+      <% var btnClass= saleStatus === 'false' ? 'btn_res btn_res_dis ticket_res_content' : 'btn_res ticket_res_content'; %>
+      <% var btnText= iskill === 'true' ? killBtnText : '预订' %>
+      <button class="<%= btnClass %>" id="ticket-detail-dialogbtn-<%= resid %>" <%= attrs.join(' ') %> ><%= btnText %></button>
+      <% } else if(appSale === false){ %>
+      <button class="<%= btnClass %>" id="ticket-detail-dialogbtn-<%= resid %>" <%= attrs.join(' ') %> ><%= btnText %></button>
+      <% } else { %>
+      <a href="http://m.ctrip.com/m/c362" lizard-catch="off" class="ticket_download">下载APP</a>
+      <% } %>
+      <span class="online_pay_text border-item-r"><%= ((resPayMode === 'P') ? '在线支付' : '景点付款') %></span>
+    </div>
+</script>
+
+<!--看了又看-->
+<script type="text/lizard-template" id="c-ticket-suggest">
+    <div class="ttd-pro-box mb10">
+        <%if(list.length > 0) {%>
+            <div class="g-pro-title border-item-t"><span class="icon-rectangle_blue"></span>看过本景点的人还看了</div>
+            <ul class="ticket_hot_list overflow">
+                <%list.forEach(function(v, i) {
+                    var url = v.url;
+                    if(!Lizard.isHybrid && from) {
+                        url += (url.indexOf('?') > 0 ? '&' : '?') + 'from=' + from;
+                    }
+
+                    url += '&ctm_ref=tkt_dl_ba_dl_' + i;
+                    var tag = v.tags.length > 0 ? v.tags[0] : {};
+                %>
+                   <li class="ticket_suggest_li" data-id="<%=v.id%>">
+                   <a href="<%=url%>" lizard-catch="off">
+                        <div class="ticket_hot_img">
+                            <%if(tag.tid == 2) {%>
+                                <span class="icon-res"><span class="icon-text"><%=tag.tname%></span></span>
+                            <%} else if(tag.tid == 3) {%>
+                                <span class="icon-dollar"><span class="icon-text"><%=tag.tname%></span></span>
+                            <%} else if(tag.tid >= 0) {%>
+                                <span class="icon-res"><span class="icon-text"><%=tag.tname%></span></span>
+                            <%}%>
+
+                            <span class="f-logo"></span>
+                            <div class="img-box"><img data-src="<%=v.imgurl%>" src=""></div>
+                        </div>
+                        <div class="ticket_hot_text">
+                            <h3 class="ellips"><%=v.name%></h3>
+                            <p>
+                                <%if(v.price) {%>
+                                    <span class="ticket_tag_price fr">
+                                        <dfn>¥</dfn>
+                                        <i><%=v.price%></i>
+                                        <span class="u-start">起</span>
+                                    </span>
+                                <%}%>
+                                <%if(v.cmtscore) {%>
+                                    <span class="g-score"><%=v.cmtscore%>分</span>
+                                <%}%>
+                            </p>
+                        </div>
+                   </a>
+                   </li>
+                <%})%>
+            </ul>
+        <%}%>
+        <%if(hasMore){%>
+            <a href="javascript:void(0)" id="tck_get_more_ticket"  class="show_more">查看更多门票</a>
+        <%}%>
+    </div>
+</script>

@@ -59,3 +59,7 @@ categories: Atom
     cmd-K, cmd-U 使当前字符大写
     cmd-K, cmd-L 使当前字符小写
 ```
+
+[how to use atom][9caf6234]
+
+  [9caf6234]: http://www.jeffjade.com/2016/03/03/2016-03-02-how-to-use-atom/ "atom"

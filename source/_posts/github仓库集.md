@@ -15,3 +15,8 @@ categories: Git
 ```
     git clone https://github.com/jianliaoim/talk-os.git
 ```
+
+  * [React-slingshot(react+redux+webpack kit)](https://github.com/coryhouse/react-slingshot)
+ ```
+    git clone https://github.com/coryhouse/react-slingshot.git
+ ```

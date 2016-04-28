@@ -6,6 +6,8 @@ categories: Git
 ---
 
 ### React
+  * [React中文索引](http://nav.react-china.org)
+  * [React components](https://github.com/react-component)
   * [活动页面运营发布系统(h5活动页)](https://github.com/laispace/pager)
 ```
     git clone https://github.com/laispace/pager.git
@@ -20,3 +22,8 @@ categories: Git
  ```
     git clone https://github.com/coryhouse/react-slingshot.git
  ```
+
+  * [react+redux+router按需加载](https://github.com/georgebbbb/ltx-wechat)
+```
+    git clone https://github.com/georgebbbb/ltx-wechat.git
+```

@@ -12,7 +12,7 @@ categories: Git
 ```
     git clone https://github.com/laispace/pager.git
 ```
-
+<!-- more -->
   * [简聊](https://github.com/jianliaoim/talk-os)
 ```
     git clone https://github.com/jianliaoim/talk-os.git
@@ -27,3 +27,5 @@ categories: Git
 ```
     git clone https://github.com/georgebbbb/ltx-wechat.git
 ```
+
+  * [react components cdk](https://github.com/kadirahq/react-cdk)
